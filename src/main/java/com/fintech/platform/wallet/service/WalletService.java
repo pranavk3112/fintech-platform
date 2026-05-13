@@ -22,6 +22,10 @@ public class WalletService {
 
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
+    private String generateUpiId(String email) {
+        String username = email.split("@")[0];
+        return username + "@fintech";
+    }
 
     // ── Create wallet for new user ───────────────────────────────
     @Transactional
@@ -39,6 +43,11 @@ public class WalletService {
                 .user(user)
                 .balance(BigDecimal.ZERO)
                 .status(Wallet.WalletStatus.ACTIVE)
+                .walletType(Wallet.WalletType.SAVINGS)
+                .upiId(generateUpiId(user.getEmail()))
+                .dailyLimit(new BigDecimal("100000.0000"))
+                .monthlyLimit(new BigDecimal("1000000.0000"))
+                .currency("INR")
                 .build();
 
         Wallet saved = walletRepository.save(wallet);
@@ -108,6 +117,11 @@ public class WalletService {
                 .ownerName(wallet.getUser().getFullName())
                 .balance(wallet.getBalance())
                 .status(wallet.getStatus().name())
+                .walletType(wallet.getWalletType().name())
+                .upiId(wallet.getUpiId())
+                .dailyLimit(wallet.getDailyLimit())
+                .monthlyLimit(wallet.getMonthlyLimit())
+                .currency(wallet.getCurrency())
                 .createdAt(wallet.getCreatedAt())
                 .build();
     }

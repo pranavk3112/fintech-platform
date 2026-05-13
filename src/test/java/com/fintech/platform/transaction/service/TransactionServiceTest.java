@@ -109,7 +109,7 @@ class TransactionServiceTest {
     @DisplayName("Should complete transfer successfully")
     void shouldCompleteTransferSuccessfully() {
         // Arrange
-        when(transactionRepository.findByIdempotencyKey(anyString()))
+        when(transactionRepository.findCompletedByIdempotencyKey(anyString()))
                 .thenReturn(Optional.empty());
         when(walletRepository.findByUserEmail(anyString()))
                 .thenReturn(Optional.of(sourceWallet));
@@ -139,7 +139,7 @@ class TransactionServiceTest {
     @DisplayName("Should return existing transaction on duplicate idempotency key")
     void shouldReturnExistingTransactionOnDuplicateKey() {
         // Arrange
-        when(transactionRepository.findByIdempotencyKey(anyString()))
+        when(transactionRepository.findCompletedByIdempotencyKey(anyString()))
                 .thenReturn(Optional.of(mockTransaction));
 
         // Act
@@ -162,7 +162,7 @@ class TransactionServiceTest {
         // Arrange
         transferRequest.setDestinationWalletId(1L);
 
-        when(transactionRepository.findByIdempotencyKey(anyString()))
+        when(transactionRepository.findCompletedByIdempotencyKey(anyString()))
                 .thenReturn(Optional.empty());
         when(walletRepository.findByUserEmail(anyString()))
                 .thenReturn(Optional.of(sourceWallet));
@@ -182,7 +182,7 @@ class TransactionServiceTest {
     @DisplayName("Should record failed transaction on insufficient balance")
     void shouldRecordFailedTransactionOnInsufficientBalance() {
         // Arrange
-        when(transactionRepository.findByIdempotencyKey(anyString()))
+        when(transactionRepository.findCompletedByIdempotencyKey(anyString()))
                 .thenReturn(Optional.empty());
         when(walletRepository.findByUserEmail(anyString()))
                 .thenReturn(Optional.of(sourceWallet));

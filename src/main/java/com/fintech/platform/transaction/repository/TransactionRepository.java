@@ -12,7 +12,8 @@ import java.util.Optional;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
-    Optional<Transaction> findByIdempotencyKey(String idempotencyKey);
+    @Query("SELECT t FROM Transaction t WHERE t.idempotencyKey = :key AND t.status = 'COMPLETED'")
+    Optional<Transaction> findCompletedByIdempotencyKey(@Param("key") String key);
 
     @Query("""
             SELECT t FROM Transaction t

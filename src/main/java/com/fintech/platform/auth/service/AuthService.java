@@ -43,7 +43,10 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(User.Role.CUSTOMER)
+                .kycStatus(User.KycStatus.PENDING)
                 .isActive(true)
+                .failedLoginAttempts(0)
+                .addressCountry("India")
                 .build();
 
         userRepository.save(user);

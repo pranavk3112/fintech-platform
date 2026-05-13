@@ -9,6 +9,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -33,12 +34,49 @@ public class User {
     @Column(nullable = false)
     private String fullName;
 
+    @Column(unique = true)
+    private String mobileNumber;
+
+    @Column
+    private LocalDate dateOfBirth;
+
+    @Column
+    private String gender;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private KycStatus kycStatus;
+
+    @Column
+    private String addressStreet;
+
+    @Column
+    private String addressCity;
+
+    @Column
+    private String addressState;
+
+    @Column
+    private String addressPincode;
+
+    @Column
+    private String addressCountry;
+
+    @Column
+    private String profilePhotoUrl;
+
     @Column(nullable = false)
     private Boolean isActive;
+
+    @Column(nullable = false)
+    private Integer failedLoginAttempts;
+
+    @Column
+    private LocalDateTime lastLoginAt;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -51,5 +89,12 @@ public class User {
     public enum Role {
         CUSTOMER,
         ADMIN
+    }
+
+    public enum KycStatus {
+        PENDING,
+        IN_REVIEW,
+        VERIFIED,
+        REJECTED
     }
 }

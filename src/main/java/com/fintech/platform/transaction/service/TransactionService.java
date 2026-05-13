@@ -37,13 +37,15 @@ public class TransactionService {
 
         // Step 1: Idempotency check
         Optional<Transaction> existing =
-                transactionRepository.findByIdempotencyKey(request.getIdempotencyKey());
+                transactionRepository.findCompletedByIdempotencyKey(request.getIdempotencyKey());
 
         if (existing.isPresent()) {
-            log.info("Duplicate request detected for idempotencyKey: {}",
+            log.info("Duplicate completed transaction for idempotencyKey: {}",
                     request.getIdempotencyKey());
             return mapToResponse(existing.get());
         }
+        log.info("No completed transaction found for idempotencyKey: {}. Processing.",
+                request.getIdempotencyKey());
 
         // Step 2: Load source wallet
         Wallet sourceWallet = walletRepository.findByUserEmail(senderEmail)

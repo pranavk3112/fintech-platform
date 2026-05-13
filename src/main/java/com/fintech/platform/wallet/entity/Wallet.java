@@ -37,6 +37,22 @@ public class Wallet {
     @Column(nullable = false)
     private WalletStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private WalletType walletType;
+
+    @Column(unique = true)
+    private String upiId;
+
+    @Column(nullable = false, precision = 19, scale = 4)
+    private BigDecimal dailyLimit;
+
+    @Column(nullable = false, precision = 19, scale = 4)
+    private BigDecimal monthlyLimit;
+
+    @Column(nullable = false)
+    private String currency;
+
     @Version
     private Long version;
 
@@ -52,5 +68,11 @@ public class Wallet {
         ACTIVE,
         SUSPENDED,
         CLOSED
+    }
+
+    public enum WalletType {
+        SAVINGS,
+        CURRENT,
+        UPI
     }
 }
