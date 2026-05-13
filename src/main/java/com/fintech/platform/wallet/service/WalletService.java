@@ -48,6 +48,7 @@ public class WalletService {
                 .dailyLimit(new BigDecimal("100000.0000"))
                 .monthlyLimit(new BigDecimal("1000000.0000"))
                 .currency("INR")
+                .upiPinSet(false)
                 .build();
 
         Wallet saved = walletRepository.save(wallet);

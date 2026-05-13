@@ -60,6 +60,12 @@ public class Wallet {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column
+    private String upiPinHash;
+
+    @Column(nullable = false)
+    private Boolean upiPinSet;
+
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
