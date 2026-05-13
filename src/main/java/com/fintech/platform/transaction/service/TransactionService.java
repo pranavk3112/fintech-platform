@@ -2,6 +2,7 @@ package com.fintech.platform.transaction.service;
 
 import com.fintech.platform.common.exception.BadRequestException;
 import com.fintech.platform.common.exception.ResourceNotFoundException;
+import com.fintech.platform.notification.event.TransferCompletedEvent;
 import com.fintech.platform.transaction.dto.TransferRequest;
 import com.fintech.platform.transaction.dto.TransactionResponse;
 import com.fintech.platform.transaction.entity.Transaction;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +29,7 @@ public class TransactionService {
     private final WalletRepository walletRepository;
     private final WalletService walletService;
     private final TransactionRecorder transactionRecorder;
+    private final ApplicationEventPublisher eventPublisher;
 
     public TransactionResponse transfer(String senderEmail, TransferRequest request) {
         log.info("Transfer initiated by: {} amount: {} idempotencyKey: {}",
@@ -47,7 +50,7 @@ public class TransactionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Source wallet not found"));
 
         // Step 3: Load destination wallet
-        Wallet destinationWallet = walletRepository.findById(request.getDestinationWalletId())
+        Wallet destinationWallet = walletRepository.findByIdWithUser(request.getDestinationWalletId())
                 .orElseThrow(() -> new ResourceNotFoundException("Destination wallet not found"));
 
         // Step 4: Cannot transfer to own wallet
@@ -77,6 +80,16 @@ public class TransactionService {
                     transaction.getId(),
                     sourceWallet.getBalance()
             );
+
+            // Publish event for async notification
+            eventPublisher.publishEvent(new TransferCompletedEvent(
+                    this,
+                    transaction.getId(),
+                    senderEmail,
+                    destinationWallet.getUser().getEmail(),
+                    request.getAmount(),
+                    sourceWallet.getBalance()
+            ));
 
             log.info("Transfer completed. TransactionId: {}", transaction.getId());
 
