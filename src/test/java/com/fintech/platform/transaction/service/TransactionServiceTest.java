@@ -41,6 +41,9 @@ class TransactionServiceTest {
     @Mock
     private TransactionRecorder transactionRecorder;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private TransactionService transactionService;
 
@@ -113,7 +116,7 @@ class TransactionServiceTest {
                 .thenReturn(Optional.empty());
         when(walletRepository.findByUserEmail(anyString()))
                 .thenReturn(Optional.of(sourceWallet));
-        when(walletRepository.findById(anyLong()))
+        when(walletRepository.findByIdWithUser(anyLong()))
                 .thenReturn(Optional.of(destinationWallet));
         when(transactionRecorder.savePendingTransaction(any()))
                 .thenReturn(mockTransaction);
@@ -166,8 +169,8 @@ class TransactionServiceTest {
                 .thenReturn(Optional.empty());
         when(walletRepository.findByUserEmail(anyString()))
                 .thenReturn(Optional.of(sourceWallet));
-        when(walletRepository.findById(anyLong()))
-                .thenReturn(Optional.of(sourceWallet));
+        when(walletRepository.findByIdWithUser(anyLong()))
+                .thenReturn(Optional.of(sourceWallet)); // ← sourceWallet not destinationWallet
 
         // Act & Assert
         assertThatThrownBy(() ->
@@ -186,7 +189,7 @@ class TransactionServiceTest {
                 .thenReturn(Optional.empty());
         when(walletRepository.findByUserEmail(anyString()))
                 .thenReturn(Optional.of(sourceWallet));
-        when(walletRepository.findById(anyLong()))
+        when(walletRepository.findByIdWithUser(anyLong()))
                 .thenReturn(Optional.of(destinationWallet));
         when(transactionRecorder.savePendingTransaction(any()))
                 .thenReturn(mockTransaction);

@@ -54,6 +54,12 @@ class WalletServiceTest {
                 .user(mockUser)
                 .balance(new BigDecimal("5000.0000"))
                 .status(Wallet.WalletStatus.ACTIVE)
+                .walletType(Wallet.WalletType.SAVINGS)
+                .upiId("test@fintech")
+                .dailyLimit(new BigDecimal("100000.0000"))
+                .monthlyLimit(new BigDecimal("1000000.0000"))
+                .currency("INR")
+                .upiPinSet(false)
                 .build();
     }
 
