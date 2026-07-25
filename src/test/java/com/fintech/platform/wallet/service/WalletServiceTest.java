@@ -2,6 +2,8 @@ package com.fintech.platform.wallet.service;
 
 import com.fintech.platform.common.exception.BadRequestException;
 import com.fintech.platform.common.exception.ResourceNotFoundException;
+import com.fintech.platform.transaction.repository.TransactionRepository;
+import com.fintech.platform.transaction.entity.Transaction;
 import com.fintech.platform.user.entity.User;
 import com.fintech.platform.user.repository.UserRepository;
 import com.fintech.platform.wallet.dto.FundWalletRequest;
@@ -32,6 +34,9 @@ class WalletServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private TransactionRepository transactionRepository;
 
     @InjectMocks
     private WalletService walletService;
@@ -122,6 +127,7 @@ class WalletServiceTest {
 
         when(walletRepository.findByUserEmail(anyString())).thenReturn(Optional.of(mockWallet));
         when(walletRepository.save(any(Wallet.class))).thenReturn(mockWallet);
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(null);
 
         // Act
         WalletResponse response = walletService.fundWallet("test@fintech.com", request);
@@ -129,6 +135,7 @@ class WalletServiceTest {
         // Assert
         assertThat(response).isNotNull();
         verify(walletRepository).save(any(Wallet.class));
+        verify(transactionRepository).save(any(Transaction.class));
     }
 
     @Test

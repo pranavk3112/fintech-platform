@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -28,6 +29,7 @@ public class UpiService {
     private final UpiTransactionRepository upiTransactionRepository;
     private final TransactionService transactionService;
     private final PasswordEncoder passwordEncoder;
+    private final UpiTransactionRecorder upiTransactionRecorder;
 
     // ── Set UPI PIN ──────────────────────────────────────────────
     @Transactional
@@ -62,7 +64,6 @@ public class UpiService {
     }
 
     // ── UPI Transfer ─────────────────────────────────────────────
-    @Transactional
     public UpiTransactionResponse upiTransfer(String senderEmail,
                                               UpiTransferRequest request) {
         log.info("UPI transfer initiated by: {} to UPI: {}",
@@ -92,30 +93,58 @@ public class UpiService {
             throw new BadRequestException("Cannot transfer to your own UPI ID");
         }
 
-        // Step 6: Execute transfer via existing TransactionService
+        // Step 6: Check UPI-level idempotency
+        Optional<UpiTransaction> existingUpi =
+                upiTransactionRepository.findCompletedByIdempotencyKey(request.getIdempotencyKey());
+
+        if (existingUpi.isPresent()) {
+            log.info("Duplicate completed UPI request for idempotencyKey: {}",
+                    request.getIdempotencyKey());
+            return mapToResponse(existingUpi.get());
+        }
+        log.info("Processing UPI transfer for idempotencyKey: {}",
+                request.getIdempotencyKey());
+
+        // Step 7: Execute transfer via TransactionService
         TransferRequest transferRequest = new TransferRequest();
         transferRequest.setAmount(request.getAmount());
         transferRequest.setDestinationWalletId(receiverWallet.getId());
         transferRequest.setIdempotencyKey(request.getIdempotencyKey());
         transferRequest.setDescription(request.getRemarks());
 
-        TransactionResponse transactionResponse = transactionService
-                .transfer(senderEmail, transferRequest);
+        String status;
+        String failureReason = null;
 
-        // Step 7: Save UPI transaction record
+        try {
+            TransactionResponse transactionResponse = transactionService
+                    .transfer(senderEmail, transferRequest);
+            status = transactionResponse.getStatus();
+        } catch (Exception e) {
+            status = "FAILED";
+            failureReason = e.getMessage();
+            log.error("UPI transfer failed for idempotencyKey: {} Reason: {}",
+                    request.getIdempotencyKey(), e.getMessage());
+        }
+
+        // Step 8: Always save UPI transaction record in independent transaction
         UpiTransaction upiTransaction = UpiTransaction.builder()
                 .senderUpiId(senderWallet.getUpiId())
                 .receiverUpiId(request.getReceiverUpiId())
                 .amount(request.getAmount())
-                .status(transactionResponse.getStatus())
+                .status(status)
                 .remarks(request.getRemarks())
+                .idempotencyKey(request.getIdempotencyKey())
+                .failureReason(failureReason)
                 .build();
 
-        upiTransactionRepository.save(upiTransaction);
+        UpiTransaction saved = upiTransactionRecorder.save(upiTransaction);
 
-        log.info("UPI transfer completed. Status: {}", transactionResponse.getStatus());
+        if ("FAILED".equals(status)) {
+            throw new BadRequestException(failureReason != null
+                    ? failureReason : "UPI transfer failed");
+        }
 
-        return mapToResponse(upiTransaction);
+        return mapToResponse(saved);
     }
 
     // ── UPI Transaction History ──────────────────────────────────
@@ -144,6 +173,7 @@ public class UpiService {
                 .amount(t.getAmount())
                 .status(t.getStatus())
                 .remarks(t.getRemarks())
+                .failureReason(t.getFailureReason())
                 .createdAt(t.getCreatedAt())
                 .build();
     }

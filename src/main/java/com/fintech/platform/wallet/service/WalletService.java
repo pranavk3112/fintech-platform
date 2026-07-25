@@ -2,6 +2,8 @@ package com.fintech.platform.wallet.service;
 
 import com.fintech.platform.common.exception.BadRequestException;
 import com.fintech.platform.common.exception.ResourceNotFoundException;
+import com.fintech.platform.transaction.entity.Transaction;
+import com.fintech.platform.transaction.repository.TransactionRepository;
 import com.fintech.platform.user.entity.User;
 import com.fintech.platform.user.repository.UserRepository;
 import com.fintech.platform.wallet.dto.FundWalletRequest;
@@ -22,12 +24,9 @@ public class WalletService {
 
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
-    private String generateUpiId(String email) {
-        String username = email.split("@")[0];
-        return username + "@fintech";
-    }
+    private final TransactionRepository transactionRepository;
 
-    // ── Create wallet for new user ───────────────────────────────
+    // ── Create wallet ────────────────────────────────────────────
     @Transactional
     public WalletResponse createWallet(String email) {
         log.info("Creating wallet for user: {}", email);
@@ -75,14 +74,30 @@ public class WalletService {
 
         validateWalletActive(wallet);
 
+        BigDecimal balanceBefore = wallet.getBalance();
         wallet.setBalance(wallet.getBalance().add(request.getAmount()));
         Wallet updated = walletRepository.save(wallet);
+
+        // Record CREDIT transaction
+        Transaction transaction = Transaction.builder()
+                .idempotencyKey("FUND-" + email + "-" + System.currentTimeMillis())
+                .sourceWallet(null)
+                .destinationWallet(updated)
+                .amount(request.getAmount())
+                .balanceBeforeSource(balanceBefore)
+                .balanceAfterSource(updated.getBalance())
+                .type(Transaction.TransactionType.CREDIT)
+                .status(Transaction.TransactionStatus.COMPLETED)
+                .description("Wallet funding")
+                .build();
+
+        transactionRepository.save(transaction);
 
         log.info("Wallet funded. New balance: {} for user: {}", updated.getBalance(), email);
         return mapToResponse(updated);
     }
 
-    // ── Internal debit (used by transaction service later) ───────
+    // ── Internal debit ───────────────────────────────────────────
     @Transactional
     public void debitWallet(Wallet wallet, BigDecimal amount) {
         validateWalletActive(wallet);
@@ -95,7 +110,7 @@ public class WalletService {
         walletRepository.save(wallet);
     }
 
-    // ── Internal credit (used by transaction service later) ──────
+    // ── Internal credit ──────────────────────────────────────────
     @Transactional
     public void creditWallet(Wallet wallet, BigDecimal amount) {
         validateWalletActive(wallet);
@@ -108,6 +123,12 @@ public class WalletService {
         if (wallet.getStatus() != Wallet.WalletStatus.ACTIVE) {
             throw new BadRequestException("Wallet is not active");
         }
+    }
+
+    // ── UPI ID generation ────────────────────────────────────────
+    private String generateUpiId(String email) {
+        String username = email.split("@")[0];
+        return username + "@fintech";
     }
 
     // ── Mapper ───────────────────────────────────────────────────

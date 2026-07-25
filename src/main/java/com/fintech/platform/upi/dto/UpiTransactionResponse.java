@@ -22,4 +22,5 @@ public class UpiTransactionResponse {
     private String status;
     private String remarks;
     private LocalDateTime createdAt;
+    private String failureReason;
 }

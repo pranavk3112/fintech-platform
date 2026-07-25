@@ -1,6 +1,6 @@
-package com.fintech.platform.upi.entity;
+package com.fintech.platform.kyc.entity;
 
-import com.fintech.platform.transaction.entity.Transaction;
+import com.fintech.platform.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,37 +9,36 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "upi_transactions")
+@Table(name = "kyc_audit_log")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class UpiTransaction {
+public class KycAuditLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "transaction_id")
-    private Transaction transaction;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false)
-    private String senderUpiId;
+    private String action;
 
-    @Column(nullable = false)
-    private String receiverUpiId;
+    @Column
+    private String oldStatus;
 
-    @Column(nullable = false, precision = 19, scale = 4)
-    private BigDecimal amount;
+    @Column
+    private String newStatus;
 
-    @Column(nullable = false)
-    private String status;
+    @Column
+    private String performedBy;
 
     @Column
     private String remarks;
@@ -47,9 +46,4 @@ public class UpiTransaction {
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    private String idempotencyKey;
-
-    @Column
-    private String failureReason;
 }
